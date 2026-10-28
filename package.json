@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test:audit": "playwright test -c proyecto-final/playwright.config.ts",
+    "test:audit:headed": "playwright test -c proyecto-final/playwright.config.ts --headed",
+    "report:audit": "playwright show-report proyecto-final/playwright-report"
+  },
   "keywords": [],
   "type": "commonjs",
   "devDependencies": {

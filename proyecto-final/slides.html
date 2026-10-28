@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sustentación Auditoría QA - OpenCart Demo | NovaQA Solutions</title>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #38bdf8;
+      --accent-alt: #818cf8;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text); overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+    
+    /* Top bar */
+    .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 100; }
+    .logo { font-weight: 800; font-size: 1.2rem; letter-spacing: 1px; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+    .timer-badge { background: #000; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 14px; font-size: 0.95rem; font-family: monospace; display: flex; align-items: center; gap: 8px; }
+    .timer-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.9rem; }
+    .nav-controls { display: flex; align-items: center; gap: 12px; }
+    .nav-btn { background: var(--card-bg); border: 1px solid rgba(255,255,255,0.2); color: var(--text); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+    .nav-btn:hover { background: var(--accent); color: #000; }
+
+    /* Slide Container */
+    .deck-container { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    .slide { position: absolute; inset: 0; padding: 40px 60px; display: none; flex-direction: column; opacity: 0; transform: translateY(20px); transition: all 0.4s ease; overflow-y: auto; }
+    .slide.active { display: flex; opacity: 1; transform: translateY(0); }
+
+    /* Typography */
+    h1 { font-size: 2.8rem; font-weight: 800; margin-bottom: 16px; background: linear-gradient(135deg, var(--accent), var(--accent-alt)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    h2 { font-size: 2.2rem; font-weight: 700; margin-bottom: 20px; color: var(--accent); }
+    h3 { font-size: 1.4rem; font-weight: 600; margin-bottom: 12px; color: #e2e8f0; }
+    p { font-size: 1.15rem; line-height: 1.6; color: var(--text-muted); margin-bottom: 16px; }
+
+    /* Grid & Cards */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; flex: 1; align-items: center; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; flex: 1; }
+    .card { background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .card.danger { border-left: 4px solid var(--danger); }
+    .card.warning { border-left: 4px solid var(--warning); }
+    .card.success { border-left: 4px solid var(--success); }
+    .stat-number { font-size: 3.5rem; font-weight: 900; line-height: 1; margin-bottom: 8px; color: var(--accent); }
+
+    /* Badge & Tags */
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
+    .badge-critic { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+    .badge-major { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
+
+    /* Speaker Notes */
+    .speaker-box { background: rgba(15, 23, 42, 0.95); border-top: 2px solid var(--accent); padding: 12px 24px; font-size: 0.95rem; color: #cbd5e1; display: none; }
+    .speaker-box.show { display: block; }
+    .speaker-role { font-weight: 800; color: var(--accent); margin-right: 8px; text-transform: uppercase; font-size: 0.8rem; }
+
+    /* Images */
+    .slide-img { max-width: 100%; max-height: 360px; object-fit: contain; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    
+    /* Progress bar */
+    .progress-bar-container { height: 4px; background: rgba(255,255,255,0.1); width: 100%; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-alt)); width: 10%; transition: width 0.3s; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="logo">
+      <span>🛡️ NovaQA Solutions</span>
+      <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 400;">| Auditoría OpenCart Demo</span>
+    </div>
+    <div class="timer-badge">
+      <span>⏱️</span>
+      <span id="countdown">10:00</span>
+      <button class="timer-btn" onclick="toggleTimer()">⏯️</button>
+      <button class="timer-btn" onclick="resetTimer()">🔄</button>
+    </div>
+    <div class="nav-controls">
+      <span id="slide-indicator" style="font-size: 0.9rem; color: var(--text-muted);">1 / 8</span>
+      <button class="nav-btn" onclick="prevSlide()">◀ Anterior</button>
+      <button class="nav-btn" onclick="nextSlide()">Siguiente ▶</button>
+      <button class="nav-btn" onclick="toggleNotes()">🎙️ Guion</button>
+    </div>
+  </div>
+
+  <div class="progress-bar-container">
+    <div class="progress-bar" id="progress"></div>
+  </div>
+
+  <!-- Slides Container -->
+  <div class="deck-container">
+
+    <!-- SLIDE 1: PORTADA -->
+    <div class="slide active" id="slide-1">
+      <div style="text-align: center; margin: auto; max-width: 800px;">
+        <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: var(--accent); border: 1px solid var(--accent); font-size: 0.9rem; padding: 6px 16px;">PROYECTO FINAL • ELECTIVA TESTING Y QA</span>
+        <h1 style="font-size: 3.5rem; margin-top: 16px; margin-bottom: 20px;">Auditoría de Calidad de Software</h1>
+        <h3 style="color: var(--accent); font-weight: 400; margin-bottom: 30px;">Evaluación Integral y Preparación para Producción sobre OpenCart Demo</h3>
+        <div style="display: flex; justify-content: center; gap: 40px; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px;">
+          <div>
+            <div style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">Empresa Consultora</div>
+            <div style="font-size: 1.2rem; font-weight: 700; color: #fff;">NovaQA Quality Solutions</div>
+          </div>
+          <div>
+            <div style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">Equipo Auditor</div>
+            <div style="font-size: 1.2rem; font-weight: 700; color: #fff;">2 Integrantes (Pareja QA)</div>
+          </div>
+          <div>
+            <div style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">Tiempo Asignado</div>
+            <div style="font-size: 1.2rem; font-weight: 700; color: var(--accent);">10 Minutos</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: ALCANCE Y APLICACIÓN -->
+    <div class="slide" id="slide-2">
+      <h2>1. Aplicación Evaluada y Alcance de la Auditoría</h2>
+      <p>Definición rigurosa de las fronteras de prueba para el Storefront de OpenCart Demo.</p>
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="color: var(--accent);">🎯 Funcionalidades Incluidas (In-Scope)</h3>
+          <ul style="list-style: none; line-height: 2; margin-top: 12px; color: #cbd5e1;">
+            <li>✅ <strong>Búsqueda y Catálogo:</strong> Consultas exactas, términos vacíos y navegación.</li>
+            <li>✅ <strong>Ficha de Producto:</strong> Opciones, cantidades y adición a la cesta.</li>
+            <li>✅ <strong>Reseñas de Producto:</strong> Reglas de negocio (25 a 1000 chars) y ratings.</li>
+            <li>✅ <strong>Carrito de Compras:</strong> Cálculos, impuestos, modificación y borrado.</li>
+            <li>✅ <strong>Cuentas y Registro:</strong> Alta de cliente, teléfonos y contraseñas.</li>
+            <li>✅ <strong>Vouchers y Devoluciones (RMA):</strong> Lógica de garantías y certificados.</li>
+            <li>✅ <strong>Multidivisa y Wishlist:</strong> Conversión de monedas y estados de sesión.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--warning);">🚫 Funcionalidades Excluidas (Out-of-Scope)</h3>
+          <ul style="list-style: none; line-height: 2; margin-top: 12px; color: #cbd5e1;">
+            <li>❌ <strong>Pasarelas de Pago Financieras Reales:</strong> Cargos a tarjetas reales en producción bancaria.</li>
+            <li>❌ <strong>Acceso SSH / Modificación de Servidor:</strong> Alteración de archivos PHP o MySQL backend.</li>
+            <li>❌ <strong>Pruebas de Carga Masiva:</strong> Ataques de estrés concurrentes > 100 usuarios en entorno demo público.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: ESTRATEGIA DE PRUEBAS -->
+    <div class="slide" id="slide-3">
+      <h2>2. Estrategia de Pruebas y Técnicas ISTQB</h2>
+      <p>Diseño metodológico balanceado con 35 casos de prueba formales.</p>
+      <div class="grid-3">
+        <div class="card">
+          <div class="badge" style="background: rgba(16, 185, 129, 0.2); color: var(--success);">8 Casos (100% OK)</div>
+          <h3>Pruebas Positivas</h3>
+          <p>Verificación del camino feliz (*Happy Path*): búsqueda, navegación, adición válida y autenticación.</p>
+        </div>
+        <div class="card">
+          <div class="badge badge-major">8 Casos (50% Fallo)</div>
+          <h3>Pruebas Negativas</h3>
+          <p>Evaluación de robustez ante datos inválidos, cadenas no numéricas, cantidades negativas y omisión de campos.</p>
+        </div>
+        <div class="card">
+          <div class="badge badge-major">7 Casos (14% Fallo)</div>
+          <h3>Valores Límite (BVA)</h3>
+          <p>Fronteras estrictas: reseñas de 24 vs 25 caracteres, vouchers de $0.50 y $1000.01, y cantidades extremas.</p>
+        </div>
+        <div class="card">
+          <div class="badge" style="background: rgba(129, 140, 248, 0.2); color: var(--accent-alt);">6 Casos (100% OK)</div>
+          <h3>Tablas de Decisión</h3>
+          <p>Combinatoria de condiciones booleanas en el alta de clientes y formulario de opiniones.</p>
+        </div>
+        <div class="card">
+          <div class="badge badge-major">6 Casos (33% Fallo)</div>
+          <h3>Transición de Estados</h3>
+          <p>Cambios de estado: carrito vacío a lleno, borrado a cantidad 0, alertas de Wishlist y cambio USD/EUR.</p>
+        </div>
+        <div class="card" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid var(--accent);">
+          <div class="stat-number">35</div>
+          <div style="font-weight: 700; color: #fff;">Total Casos Diseñados</div>
+          <div style="color: var(--text-muted); font-size: 0.9rem;">28 Aprobados • 7 Fallidos (80% / 20%)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: HALLAZGOS Y DEFECTOS -->
+    <div class="slide" id="slide-4">
+      <h2>3. Principales Defectos Críticos y Mayores</h2>
+      <p>10 defectos reales identificados y respaldados con capturas de pantalla fechadas.</p>
+      <div class="grid-2">
+        <div class="card danger">
+          <span class="badge badge-critic">DEF-06 • SEVERIDAD CRÍTICA</span>
+          <h3>Desbordamiento de Orden ($123 Mil Millones)</h3>
+          <p>Permite ingresar 999,999,999 unidades sin validación de stock máximo, calculando un total absurdo que desbordaría tipos de datos enteros y pasarelas de pago.</p>
+          <img src="evidencias/DEF-06_cantidad_astronomica_sin_limite.png" class="slide-img" alt="DEF-06">
+        </div>
+        <div class="card danger">
+          <span class="badge badge-critic">DEF-04 • SEVERIDAD CRÍTICA</span>
+          <h3>Devoluciones (RMA) con Orden Ficticia</h3>
+          <p>Acepta Order IDs alfanuméricos como <code>ORDEN-INVALIDA</code> y radica solicitudes de garantía sin validar si la orden existe en la base de datos.</p>
+          <img src="evidencias/DEF-04_devoluciones_order_id_no_numerico.png" class="slide-img" alt="DEF-04">
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: DEFECTOS MAYORES -->
+    <div class="slide" id="slide-5">
+      <h2>3.1 Defectos Mayores: Falsos Positivos e Integridad</h2>
+      <p>Fallas en la experiencia transaccional y captura de datos de clientes.</p>
+      <div class="grid-2">
+        <div class="card warning">
+          <span class="badge badge-major">DEF-01 • SEVERIDAD MAYOR</span>
+          <h3>Falso Positivo en Cantidad Negativa (-10)</h3>
+          <p>Al agregar un producto con cantidad negativa, muestra alerta verde de éxito ("Success: You have added...") pero el carrito queda totalmente vacío.</p>
+          <img src="evidencias/DEF-01_cantidad_negativa_exito_falso.png" class="slide-img" alt="DEF-01">
+        </div>
+        <div class="card warning">
+          <span class="badge badge-major">DEF-03 • SEVERIDAD MAYOR</span>
+          <h3>Teléfono sin Validación Numérica en Registro</h3>
+          <p>Permite crear cuentas con letras y caracteres especiales en el teléfono (<code>NOT-A-PHONE-NUMBER-123!@#</code>), rompiendo la logística de entrega.</p>
+          <img src="evidencias/DEF-03_registro_telefono_sin_validacion_numerica.png" class="slide-img" alt="DEF-03">
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: AUTOMATIZACIÓN PLAYWRIGHT -->
+    <div class="slide" id="slide-6">
+      <h2>4. Automatización E2E con Playwright</h2>
+      <p>5 flujos transaccionales clave automatizados con TypeScript y ejecución verificable.</p>
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="color: var(--accent);">🚀 Escenarios Automatizados</h3>
+          <ul style="list-style: none; line-height: 2.2; margin-top: 10px; color: #cbd5e1;">
+            <li>🔹 <strong>CP-AUT-01:</strong> Búsqueda de producto MacBook (Positiva).</li>
+            <li>🔹 <strong>CP-AUT-02:</strong> Flujo completo E2E de adición y carrito (Positiva).</li>
+            <li>🔹 <strong>CP-AUT-03:</strong> BVA en Reseñas: 24 chars rechaza, 25 aprueba.</li>
+            <li>🔹 <strong>CP-AUT-04:</strong> Registro de usuario con campos vacíos (Negativa).</li>
+            <li>🔹 <strong>CP-AUT-05:</strong> Transición dinámica de divisa de USD a EUR.</li>
+          </ul>
+          <div style="margin-top: 20px; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 6px; font-family: monospace; color: var(--accent);">
+            $ npm run test:audit<br>
+            <span style="color: var(--success);">5 passed (41.5s) • 100% Tasa de Éxito</span>
+          </div>
+        </div>
+        <div>
+          <img src="evidencias/playwright_html_report.png" class="slide-img" style="max-height: 380px; width: 100%;" alt="Reporte Playwright">
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: COBERTURA DE PRUEBAS -->
+    <div class="slide" id="slide-7">
+      <h2>5. Cobertura de Pruebas (Functional vs Code Coverage)</h2>
+      <p>Aclaración conceptual rigurosa y reporte de métricas formales.</p>
+      <div class="grid-3">
+        <div class="card success">
+          <div class="stat-number" style="color: var(--success);">85.7%</div>
+          <h3>Cobertura Funcional (RTM)</h3>
+          <p>12 de 14 módulos evaluados mediante la Matriz de Trazabilidad de Requisitos. Supera holgadamente el 50% mínimo requerido.</p>
+        </div>
+        <div class="card">
+          <div class="stat-number">100%</div>
+          <h3>Cobertura de Ejecución</h3>
+          <p>35 de 35 casos planificados fueron efectivamente ejecutados y registrados en el inventario de pruebas.</p>
+        </div>
+        <div class="card">
+          <div class="stat-number" style="color: var(--accent-alt);">100%</div>
+          <h3>Cobertura de Técnicas</h3>
+          <p>5 de 5 técnicas ISTQB cubiertas (Positivas, Negativas, BVA, Tablas de Decisión y Transición de Estados).</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top: 20px; background: rgba(30, 41, 59, 0.4);">
+        <strong style="color: var(--accent);">💡 Precisión Metodológica:</strong> La cobertura de código (*Statement/Branch*) pertenece a caja blanca y requiere instrumentar el servidor backend PHP con herramientas como Xdebug. En una auditoría externa de caja negra sobre un servidor remoto de pruebas, la métrica estándar y auditable es la Cobertura de Requisitos Funcionales.
+      </div>
+    </div>
+
+    <!-- SLIDE 8: CONCEPTO FINAL -->
+    <div class="slide" id="slide-8">
+      <div style="text-align: center; max-width: 900px; margin: auto;">
+        <h2 style="font-size: 2.2rem; color: #fff; margin-bottom: 12px;">Concepto Final: ¿La aplicación está lista para producción?</h2>
+        <div style="font-size: 6rem; font-weight: 900; color: var(--danger); letter-spacing: 4px; margin: 15px 0;">NO</div>
+        <div class="card danger" style="text-align: left; margin-bottom: 24px;">
+          <h3 style="color: var(--danger);">Justificación Basada en Criterios de Salida (Exit Criteria):</h3>
+          <ul style="list-style: none; line-height: 1.8; color: #cbd5e1; margin-top: 8px;">
+            <li>❌ <strong>Incumplimiento de Criterios de Calidad:</strong> Ninguna aplicación puede desplegarse a producción con defectos Críticos o Mayores abiertos. OpenCart presenta actualmente 2 Críticos (DEF-04, DEF-06) y 2 Mayores (DEF-01, DEF-03).</li>
+            <li>❌ <strong>Vulnerabilidad Financiera:</strong> Carrito vulnerable a desbordamientos monetarios ($123 mil millones).</li>
+            <li>❌ <strong>Fuga Operativa:</strong> Admite devoluciones y garantías sobre compras inexistentes.</li>
+          </ul>
+        </div>
+        <div style="color: var(--accent); font-weight: 600; font-size: 1.1rem;">
+          Recomendación: Implementar Hotfixes de validación numérica, correr la suite de Playwright para regresión y recertificar.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Speaker Notes Box (Toggleable with "🎙️ Guion" button) -->
+  <div class="speaker-box" id="speaker-notes">
+    <span class="speaker-role" id="speaker-title">INTEGRANTE 1 (00:00 - 01:30)</span>
+    <span id="speaker-text">Guion cargando...</span>
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const indicator = document.getElementById('slide-indicator');
+    const progressBar = document.getElementById('progress');
+    const speakerTitle = document.getElementById('speaker-title');
+    const speakerText = document.getElementById('speaker-text');
+    let currentSlide = 0;
+
+    const notes = [
+      { role: "INTEGRANTE 1 (00:00 - 00:45)", text: "Buenos días miembros del jurado. Somos NovaQA Solutions. Hoy presentamos los resultados de la auditoría de calidad sobre OpenCart Demo y nuestro concepto técnico para producción." },
+      { role: "INTEGRANTE 1 (00:45 - 01:30)", text: "Evaluamos 12 módulos funcionales del Storefront, desde búsqueda y catálogo hasta carrito y devoluciones. Excluimos cobros reales con bancos y pruebas de carga masiva en el servidor demo." },
+      { role: "INTEGRANTE 2 (01:30 - 02:30)", text: "Diseñamos 35 casos de prueba aplicando 5 técnicas formales ISTQB: positivas, negativas, análisis de valores límite, tablas de decisión y transición de estados para no limitarnos solo al camino feliz." },
+      { role: "INTEGRANTE 1 (02:30 - 04:30)", text: "Hallamos 10 defectos reales. Resalto los 2 críticos: DEF-06 permite carritos de 123 mil millones sin límite de stock, y DEF-04 acepta devoluciones con Order IDs ficticios sin validar contra la base de datos." },
+      { role: "INTEGRANTE 1 (04:30 - 06:00)", text: "En los defectos mayores: DEF-01 muestra mensaje verde de éxito al poner cantidad negativa pero deja el carrito vacío (falso positivo), y DEF-03 permite registrar clientes con teléfonos llenos de letras." },
+      { role: "INTEGRANTE 2 (06:00 - 07:15)", text: "Automatizamos 5 flujos vitales con Playwright en TypeScript (búsqueda, carrito, BVA en reseñas de 24 vs 25 chars, registro vacío y cambio a euros). La suite corre en 41s con 100% de éxito." },
+      { role: "INTEGRANTE 2 (07:15 - 08:00)", text: "La cobertura funcional fue del 85.7% (12 de 14 módulos evaluados). Explicamos al jurado que en caja negra externa la cobertura auditable es la funcional (RTM), no la de líneas de código blanco." },
+      { role: "AMBOS INTEGRANTES (08:00 - 10:00)", text: "Dictamen Final: NO está lista para producción. Ningún software sale a producción con defectos críticos o mayores abiertos. Sugerimos aplicar el plan de hotfixes y recertificar con Playwright." }
+    ];
+
+    function showSlide(index) {
+      slides.forEach((s, i) => {
+        s.classList.toggle('active', i === index);
+      });
+      indicator.textContent = `${index + 1} / ${slides.length}`;
+      progressBar.style.width = `${((index + 1) / slides.length) * 100}%`;
+      speakerTitle.textContent = notes[index].role;
+      speakerText.textContent = notes[index].text;
+      currentSlide = index;
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) showSlide(currentSlide + 1);
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) showSlide(currentSlide - 1);
+    }
+
+    function toggleNotes() {
+      const box = document.getElementById('speaker-notes');
+      box.classList.toggle('show');
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') nextSlide();
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') prevSlide();
+      if (e.key === 'n' || e.key === 'N') toggleNotes();
+    });
+
+    // 10-Minute Countdown Timer
+    let timeLeft = 600; // 10 minutes
+    let timerInterval = null;
+    let isRunning = false;
+
+    function updateCountdownDisplay() {
+      const min = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+      const sec = (timeLeft % 60).toString().padStart(2, '0');
+      const el = document.getElementById('countdown');
+      el.textContent = `${min}:${sec}`;
+      if (timeLeft < 120) {
+        el.style.color = 'var(--danger)';
+      } else if (timeLeft < 300) {
+        el.style.color = 'var(--warning)';
+      } else {
+        el.style.color = '#fff';
+      }
+    }
+
+    function toggleTimer() {
+      if (isRunning) {
+        clearInterval(timerInterval);
+        isRunning = false;
+      } else {
+        isRunning = true;
+        timerInterval = setInterval(() => {
+          if (timeLeft > 0) {
+            timeLeft--;
+            updateCountdownDisplay();
+          } else {
+            clearInterval(timerInterval);
+            isRunning = false;
+          }
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      isRunning = false;
+      timeLeft = 600;
+      updateCountdownDisplay();
+    }
+
+    showSlide(0);
+  </script>
+</body>
+</html>
