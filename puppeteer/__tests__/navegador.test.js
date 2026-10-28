@@ -5,6 +5,11 @@ const puppeteer = require('puppeteer');
             const browser = await puppeteer.launch({
                 headless: false,
                 slowMo: 200,
+                devtools: true,
+                defaultViewport: {
+                    width: 1280,
+                    height: 720
+                }
             });
 
             const page = await browser.newPage();
